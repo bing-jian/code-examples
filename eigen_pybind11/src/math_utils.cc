@@ -1,54 +1,47 @@
 #include "math_utils.h"
 
+#include <iostream>
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <iostream>
 
 namespace bingjian {
 
 using namespace Eigen;
 
-// https://gist.github.com/JiaxiangZheng/8168862
-TransformType ComputeRigidTransform(const PointsType& src,
-                                    const PointsType& dst) {
-  assert(src.size() == dst.size());
-  int pairSize = src.size();
-  Eigen::Vector3d center_src(0, 0, 0), center_dst(0, 0, 0);
-  for (int i = 0; i < pairSize; ++i) {
-    center_src += src[i];
-    center_dst += dst[i];
-  }
-  center_src /= (double)pairSize;
-  center_dst /= (double)pairSize;
+// Originally adapted from https://gist.github.com/JiaxiangZheng/8168862
+// References:
+//   [1] https://igl.ethz.ch/projects/ARAP/svd_rot.pdf
+//   [2] http://graphics.stanford.edu/~smr/ICP/comparison/eggert_comparison_mva97.pdf
+// TODO(bing.jian): Consider using Eigen::Affine3d in Eigen/Geometry
+TransformType ComputeRigidTransform(const Points3DType& src,
+                                    const Points3DType& dst) {
+  assert(src.rows() == dst.rows());
+  assert(src.rows() > 3);
+  assert(3 == src.cols() == dst.cols());
 
-  Eigen::MatrixXd S(pairSize, 3), D(pairSize, 3);
-  for (int i = 0; i < pairSize; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      S(i, j) = src[i][j] - center_src[j];
-    }
-    for (int j = 0; j < 3; ++j) {
-      D(i, j) = dst[i][j] - center_dst[j];
-    }
-  }
-  Eigen::MatrixXd Dt = D.transpose();
-  Eigen::Matrix3d H = Dt * S;
-  Eigen::Matrix3d W, U, V;
+  RowVector3d center_src = src.colwise().mean();
+  RowVector3d center_dst = dst.colwise().mean();
 
-  JacobiSVD<Eigen::MatrixXd> svd;
-  Eigen::MatrixXd H_(3, 3);
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      H_(i, j) = H(i, j);
-    }
-  }
-  svd.compute(H_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  MatrixXd S(src), D(dst);
+  S.rowwise() -= center_src;
+  D.rowwise() -= center_dst;
+
+  JacobiSVD<MatrixXd> svd;
+  MatrixXd H = D.transpose() * S;  // 3x3
+  svd.compute(H, ComputeThinU | ComputeThinV);
   if (!svd.computeU() || !svd.computeV()) {
-    std::cerr << "decomposition error" << std::endl;
-    return std::make_pair(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero());
+    std::cerr << "SVD error" << std::endl;
+    return std::make_pair(Matrix3d::Identity(), Vector3d::Zero());
   }
-  Eigen::Matrix3d Vt = svd.matrixV().transpose();
-  Eigen::Matrix3d R = svd.matrixU() * Vt;
-  Eigen::Vector3d t = center_dst - R * center_src;
+  Matrix3d Vt = svd.matrixV().transpose();
+  Matrix3d R = svd.matrixU() * Vt;
+  if (R.determinant() < 0) { // Orientation rectification
+      Matrix3d I = Matrix3d::Identity();
+      I(2, 2) = -1;
+      R = svd.matrixU() * I * Vt;
+  }
+  Vector3d t = center_dst.transpose() - R * center_src.transpose();
 
   return std::make_pair(R, t);
 }

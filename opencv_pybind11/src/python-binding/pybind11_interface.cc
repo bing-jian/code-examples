@@ -10,7 +10,7 @@
 
 namespace py = pybind11;
 
-// https://blog.csdn.net/non_hercules/article/details/105095153
+// https://www.jianshu.com/p/be16847b0b74
 // https://stackoverflow.com/questions/18423512/calling-c-code-from-python-using-cython-whith-the-distutilis-approach
 py::array_t<unsigned char> test_rgb_to_gray(
     const py::array_t<unsigned char>& input) {

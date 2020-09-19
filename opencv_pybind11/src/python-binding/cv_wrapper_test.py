@@ -4,7 +4,7 @@ import numpy as np
 
 import cv_wrapper
 
-# https://blog.csdn.net/non_hercules/article/details/105095153
+# https://www.jianshu.com/p/be16847b0b74
 def main():
     image_rgb = cv2.imread('lena_color.jpg', cv2.IMREAD_UNCHANGED)
     image_gray = cv2.imread('lena_gray.jpg', cv2.IMREAD_UNCHANGED)

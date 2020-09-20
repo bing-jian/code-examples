@@ -37,10 +37,10 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 pybind11_add_module(cv_wrapper_v1 MODULE cv_wrapper_v1_interface.cc mat_wrapper.cc)
 target_link_libraries(cv_wrapper_v1 PRIVATE ${OpenCV_LIBS})
-#set_target_properties(cv_wrapper_v1 PROPERTIES PREFIX "" INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(cv_wrapper_v1 PROPERTIES PREFIX "" INSTALL_RPATH_USE_LINK_PATH TRUE)
 install(TARGETS cv_wrapper_v1 DESTINATION ${CMAKE_SOURCE_DIR}/wrapper)
 
 pybind11_add_module(cv_wrapper_v2 MODULE cv_wrapper_v2_interface.cc ndarray_converter.cc)
 target_link_libraries(cv_wrapper_v2 PRIVATE ${OpenCV_LIBS})
-#set_target_properties(cv_wrapper_v2 PROPERTIES PREFIX ""  INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(cv_wrapper_v2 PROPERTIES PREFIX ""  INSTALL_RPATH_USE_LINK_PATH TRUE)
 install(TARGETS cv_wrapper_v2 DESTINATION ${CMAKE_SOURCE_DIR}/wrapper)

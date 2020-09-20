@@ -28,12 +28,6 @@ HINTS "${__numpy_path}" "${PYTHON_INCLUDE_PATH}" NO_DEFAULT_PATH)
 message(STATUS "PYTHON_NUMPY_INCLUDE_DIR : " ${PYTHON_NUMPY_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 
-# Find OpenCV -DOpenCV_DIR=...
-find_package (OpenCV REQUIRED)
-message(STATUS "OpenCV_INCLUDE_DIRS : ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "OpenCV_LIBS : ${OpenCV_LIBS}")
-include_directories(${OpenCV_INCLUDE_DIRS})
-
 
 pybind11_add_module(cv_wrapper_v1 MODULE cv_wrapper_v1_interface.cc mat_wrapper.cc)
 target_link_libraries(cv_wrapper_v1 PRIVATE ${OpenCV_LIBS})
@@ -41,6 +35,6 @@ set_target_properties(cv_wrapper_v1 PROPERTIES PREFIX "" INSTALL_RPATH_USE_LINK_
 install(TARGETS cv_wrapper_v1 DESTINATION ${CMAKE_SOURCE_DIR}/wrapper)
 
 pybind11_add_module(cv_wrapper_v2 MODULE cv_wrapper_v2_interface.cc ndarray_converter.cc)
-target_link_libraries(cv_wrapper_v2 PRIVATE ${OpenCV_LIBS})
+target_link_libraries(cv_wrapper_v2 PRIVATE depth_utils ${OpenCV_LIBS})
 set_target_properties(cv_wrapper_v2 PROPERTIES PREFIX ""  INSTALL_RPATH_USE_LINK_PATH TRUE)
 install(TARGETS cv_wrapper_v2 DESTINATION ${CMAKE_SOURCE_DIR}/wrapper)

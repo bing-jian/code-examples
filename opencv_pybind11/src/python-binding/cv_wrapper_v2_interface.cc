@@ -9,6 +9,7 @@
 #include <string>
 
 #include "ndarray_converter.h"
+#include "../depth_utils.h"
 
 namespace py = pybind11;
 
@@ -55,4 +56,6 @@ PYBIND11_MODULE(cv_wrapper_v2, m) {
   py::class_<AddClass>(m, "AddClass")
       .def(py::init<int>())
       .def("add", &AddClass::add);
+
+  m.def("fill_hole", &bingjian::FillHoleByMedianFiltering, "Filling holes");
 }

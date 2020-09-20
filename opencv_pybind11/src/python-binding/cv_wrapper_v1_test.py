@@ -2,7 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-import cv_wrapper
+import cv_wrapper_v1 as cv_wrapper
 
 # https://www.jianshu.com/p/be16847b0b74
 def main():

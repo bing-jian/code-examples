@@ -45,7 +45,7 @@ py::list test_pyramid_image(const py::array_t<unsigned char>& input) {
   return out;
 }
 
-PYBIND11_MODULE(cv_wrapper, m) {
+PYBIND11_MODULE(cv_wrapper_v1, m) {
   m.doc() = "Simple opencv demo";
 
   m.def("test_rgb_to_gray", &test_rgb_to_gray);

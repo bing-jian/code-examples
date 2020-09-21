@@ -52,9 +52,15 @@ def holefilling_test(imgfile, radius, num_iters):
     depth = cv2.imread(imgfile, cv2.IMREAD_UNCHANGED)
     depth = depth.astype(np.uint16)
     depth_orig = copy.deepcopy(depth)
+    func = cv_wrapper_v2.fill_hole
     for i in range(num_iters):
-        filled_cnt = cv_wrapper_v2.fill_hole(depth, radius)
-        print("filled %d holes at iter #%d"%(filled_cnt, i+1))
+        if i == 0:
+            skip_nonzeros = False
+        else:
+            skip_nonzeros = True
+        zero_cnt, filled, duration = func(depth, radius, skip_nonzeros)
+        print("[iter #%d]: %d zeros found, %d filled in %d milliseconds."
+                %(i+1, zero_cnt, filled, duration))
     plt.subplot(1, 2, 1)
     plt.axis('off')
     plt.imshow(depth_orig, cmap=plt.gray())

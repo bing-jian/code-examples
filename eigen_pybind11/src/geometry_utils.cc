@@ -6,14 +6,6 @@
 #include <utility>
 #include <vector>
 
-//#define __LOGGING_TIME__
-
-#ifdef __LOGGING_TIME__
-#include <chrono>
-#include <iostream>
-using namespace std::chrono;
-#endif
-
 using namespace Eigen;
 
 namespace bingjian {
@@ -111,7 +103,7 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
   return res;
 }
 
-std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImage(
+std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImageSimple(
     const MatrixX3i& faces, const MatrixX2d& xy_2d, const MatrixX3d& rgb,
     int height, int width) {
   MatrixXd dst_r(height, width);
@@ -165,7 +157,111 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImage(
       }
     }
   }
-  return std::make_tuple(std::move(dst_r), std::move(dst_g), std::move(dst_b));
+  return std::make_tuple(dst_r, dst_g, dst_b);
+}
+
+std::tuple<MatrixXd, MatrixXd, MatrixXd, MatrixXi> CreateTextureImage(
+    const std::vector<double>& depth, const MatrixX3i& faces,
+    const std::vector<int>& valid_ids, const MatrixX2d& xy_2d,
+    const MatrixX3d& rgb, int height, int width) {
+  MatrixXd dst_r(height, width);
+  MatrixXd dst_g(height, width);
+  MatrixXd dst_b(height, width);
+  dst_r.setZero();
+  dst_g.setZero();
+  dst_b.setZero();
+  // Note that the default storage order of Eigen is column-major.
+  MatrixXi lattice_to_face_map(height, width);
+  lattice_to_face_map.setZero();
+
+  std::vector<std::pair<double, int>> sorted_faces;
+  sorted_faces.reserve(valid_ids.size());
+  for (const int i : valid_ids) {
+    int i0 = faces(i, 0);
+    int i1 = faces(i, 1);
+    int i2 = faces(i, 2);
+    double v = depth[i0] + depth[i1] + depth[i2];
+    sorted_faces.emplace_back(-v, i);
+  }
+  std::sort(sorted_faces.begin(), sorted_faces.end());
+
+  auto upper_left = xy_2d.colwise().minCoeff();
+  auto bottom_right = xy_2d.colwise().maxCoeff();
+  int bbox_left = std::floor(upper_left(0));
+  int bbox_top = std::floor(upper_left(1));
+  int bbox_right = std::ceil(bottom_right(0));
+  int bbox_bottom = std::ceil(bottom_right(1));
+  std::unordered_map<int, std::pair<int, int>> y_interval_per_column;
+
+  for (const auto& item : sorted_faces) {
+    int face_idx = item.second;
+    int v1_idx = faces(face_idx, 0);
+    int v2_idx = faces(face_idx, 1);
+    int v3_idx = faces(face_idx, 2);
+    Vector2d p1 = xy_2d.row(v1_idx);
+    Vector2d p2 = xy_2d.row(v2_idx);
+    Vector2d p3 = xy_2d.row(v3_idx);
+    auto res = LatticePointsInTriangle(p1, p2, p3);
+    for (const auto& pt : res) {
+      // If multiple faces cover same lattice, new face (closer to camera)
+      // will override old face
+      int x = std::get<0>(pt);
+      int y_min = std::get<1>(pt);
+      int y_max = std::get<2>(pt);
+      for (int y = y_min; y < y_max; ++y) {
+        lattice_to_face_map(y, x) = face_idx + 1;
+      }
+    }
+  }
+
+  std::unordered_map<int, std::vector<std::pair<int, int>>> face_to_lattice_map;
+  for (int x = bbox_left; x < bbox_right; ++x) {
+    for (int y = bbox_top; y < bbox_bottom; ++y) {
+      int face_idx = lattice_to_face_map(y, x);
+      if (face_idx > 0) {
+        face_to_lattice_map[face_idx - 1].emplace_back(x, y);
+      }
+    }
+  }
+
+  for (const auto& x : face_to_lattice_map) {
+    int face_idx = x.first;
+    int v1_idx = faces(face_idx, 0);
+    int v2_idx = faces(face_idx, 1);
+    int v3_idx = faces(face_idx, 2);
+    Vector2d p1 = xy_2d.row(v1_idx);
+    Vector2d p2 = xy_2d.row(v2_idx);
+    Vector2d p3 = xy_2d.row(v3_idx);
+    Vector3d rgb1 = rgb.row(v1_idx);
+    Vector3d rgb2 = rgb.row(v2_idx);
+    Vector3d rgb3 = rgb.row(v3_idx);
+
+    double x1 = p1(0);
+    double y1 = p1(1);
+    double x2 = p2(0);
+    double y2 = p2(1);
+    double x3 = p3(0);
+    double y3 = p3(1);
+    double det = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+    const auto& lattices = x.second;
+    int max_x = width - 1;
+    int max_y = height - 1;
+    for (const auto& xy : lattices) {
+      int x = xy.first;
+      int y = xy.second;
+      if (x < 0 || y < 0 || x >= width || y >= height) {
+        continue;
+      }
+      double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
+      double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
+      double c3 = 1 - c1 - c2;
+      Vector3d rgb_at_yx = c1 * rgb1 + c2 * rgb2 + c3 * rgb3;
+      dst_r(y, x) = rgb_at_yx(0);
+      dst_g(y, x) = rgb_at_yx(1);
+      dst_b(y, x) = rgb_at_yx(2);
+    }
+  }
+  return std::make_tuple(dst_r, dst_g, dst_b, lattice_to_face_map);
 }
 
 }  // namespace bingjian

@@ -111,4 +111,61 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
   return res;
 }
 
+std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImage(
+    const MatrixX3i& faces, const MatrixX2d& xy_2d, const MatrixX3d& rgb,
+    int height, int width) {
+  MatrixXd dst_r(height, width);
+  MatrixXd dst_g(height, width);
+  MatrixXd dst_b(height, width);
+  dst_r.setZero();
+  dst_g.setZero();
+  dst_b.setZero();
+
+  int num_of_faces = faces.rows();
+
+  for (int face_idx = 0; face_idx < num_of_faces; ++face_idx) {
+    int v1_idx = faces(face_idx, 0);
+    int v2_idx = faces(face_idx, 1);
+    int v3_idx = faces(face_idx, 2);
+    Vector2d p1 = xy_2d.row(v1_idx);
+    Vector2d p2 = xy_2d.row(v2_idx);
+    Vector2d p3 = xy_2d.row(v3_idx);
+    Vector3d rgb1 = rgb.row(v1_idx);
+    Vector3d rgb2 = rgb.row(v2_idx);
+    Vector3d rgb3 = rgb.row(v3_idx);
+    double x1 = p1(0);
+    double y1 = p1(1);
+    double x2 = p2(0);
+    double y2 = p2(1);
+    double x3 = p3(0);
+    double y3 = p3(1);
+    double det = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+
+    auto res = LatticePointsInTriangle(p1, p2, p3);
+    for (const auto& pt : res) {
+      // Assume faces do not overlap in 2d. Otherwise we need to sort
+      // faces based on visibility. Closest faces should come last.
+      int x = std::get<0>(pt);
+      if (x < 0 || x >= width) {
+        continue;
+      }
+      int y_min = std::get<1>(pt);
+      int y_max = std::get<2>(pt);
+      for (int y = y_min; y < y_max; ++y) {
+        if (y < 0 || y >= height) {
+          continue;
+        }
+        double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
+        double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
+        double c3 = 1 - c1 - c2;
+        Vector3d rgb_at_yx = c1 * rgb1 + c2 * rgb2 + c3 * rgb3;
+        dst_r(y, x) = rgb_at_yx(0);
+        dst_g(y, x) = rgb_at_yx(1);
+        dst_b(y, x) = rgb_at_yx(2);
+      }
+    }
+  }
+  return std::make_tuple(std::move(dst_r), std::move(dst_g), std::move(dst_b));
+}
+
 }  // namespace bingjian

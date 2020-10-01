@@ -30,4 +30,6 @@ PYBIND11_MODULE(wrapper, m) {
         py::return_value_policy::move);
   m.def("lattices_in_triangle", &bingjian::LatticePointsInTriangle,
         py::return_value_policy::move);
+  m.def("create_texture", &bingjian::CreateTextureImage,
+        py::return_value_policy::move);
 }

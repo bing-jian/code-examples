@@ -1,9 +1,8 @@
 #include "math_utils.h"
 
-#include <iostream>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <iostream>
 
 namespace bingjian {
 
@@ -12,7 +11,8 @@ using namespace Eigen;
 // Originally adapted from https://gist.github.com/JiaxiangZheng/8168862
 // References:
 //   [1] https://igl.ethz.ch/projects/ARAP/svd_rot.pdf
-//   [2] http://graphics.stanford.edu/~smr/ICP/comparison/eggert_comparison_mva97.pdf
+//   [2]
+//   http://graphics.stanford.edu/~smr/ICP/comparison/eggert_comparison_mva97.pdf
 // TODO(bing.jian): Consider using Eigen::Affine3d in Eigen/Geometry
 TransformType ComputeRigidTransform(const Points3DType& src,
                                     const Points3DType& dst) {
@@ -36,10 +36,10 @@ TransformType ComputeRigidTransform(const Points3DType& src,
   }
   Matrix3d Vt = svd.matrixV().transpose();
   Matrix3d R = svd.matrixU() * Vt;
-  if (R.determinant() < 0) { // Orientation rectification
-      Matrix3d I = Matrix3d::Identity();
-      I(2, 2) = -1;
-      R = svd.matrixU() * I * Vt;
+  if (R.determinant() < 0) {  // Orientation rectification
+    Matrix3d I = Matrix3d::Identity();
+    I(2, 2) = -1;
+    R = svd.matrixU() * I * Vt;
   }
   Vector3d t = center_dst.transpose() - R * center_src.transpose();
 

@@ -1,9 +1,8 @@
 #ifndef MATH_UTILS_H_
 #define MATH_UTILS_H_
 
-#include <vector>
-
 #include <Eigen/Core>
+#include <vector>
 
 namespace bingjian {
 

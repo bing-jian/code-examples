@@ -7,6 +7,7 @@
 #include <Eigen/LU>
 
 #include "../funcs.h"
+#include "../geometry_utils.h"
 #include "../math_utils.h"
 
 using namespace pybind11::literals;
@@ -26,5 +27,7 @@ PYBIND11_MODULE(wrapper, m) {
   m.def("inv", &inv);
   m.def("det", &det);
   m.def("rigid_transform", &bingjian::ComputeRigidTransform,
+        py::return_value_policy::move);
+  m.def("lattices_in_triangle", &bingjian::LatticePointsInTriangle,
         py::return_value_policy::move);
 }

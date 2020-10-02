@@ -8,6 +8,24 @@
 
 using namespace Eigen;
 
+namespace {
+
+int ceil_with_margin(double x) {
+  int xi = std::ceil(x);
+  if (xi == x) {
+    return xi + 1;
+  }
+  return xi;
+}
+
+std::pair<int, int> inclusive_exclusive_bound(double a, double b) {
+  double _min = std::min(a, b);
+  double _max = std::max(a, b);
+  return std::make_pair(std::ceil(_min), ceil_with_margin(_max));
+}
+
+}  // namespace
+
 namespace bingjian {
 
 std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
@@ -20,6 +38,7 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
                                  triangle.row(2));
 }
 
+// pts = np.array([[1,1], [2.3, 4 ], [2.3, 4.5]])
 std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
     const Vector2d& p1, const Vector2d& p2, const Vector2d& p3) {
   // Sort by x coordinates
@@ -43,60 +62,34 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
   // Process segment from x1 to x2
   int x1i = std::ceil(x1);
   int x2i = std::ceil(x2);
-  int x3i = std::ceil(x3);
+  int x3i = ceil_with_margin(x3);
   double coeff_21 = (y2 - y1) / (x2 - x1);
   double coeff_31 = (y3 - y1) / (x3 - x1);
   double coeff_32 = (y3 - y2) / (x3 - x2);
 
   int y_min, y_max = 0;
   if (x2 == x1) {
-    if (y1 < y2) {
-      y_min = std::ceil(y1);
-      y_max = std::ceil(y2);
-    } else {
-      y_min = std::ceil(y2);
-      y_max = std::ceil(y1);
-    }
-    res.emplace_back(x1i, y_min, y_max);
+    auto o = inclusive_exclusive_bound(y1, y2);
+    res.emplace_back(x1i, o.first, o.second);
   } else {
-    for (int x = x1i; x < x2i; ++x) {
+    for (int x = x1i; x < ceil_with_margin(x2); ++x) {
       // find intersection of line x=x with lines AB
       double y_AB = (x - x1) * coeff_21 + y1;
       // find intersection of line x=x with lines AC
       double y_AC = (x - x1) * coeff_31 + y1;
-      if (y_AB < y_AC) {
-        y_min = std::ceil(y_AB);
-        y_max = std::ceil(y_AC);
-      } else {
-        y_min = std::ceil(y_AC);
-        y_max = std::ceil(y_AB);
-      }
-      res.emplace_back(x, y_min, y_max);
+      auto o = inclusive_exclusive_bound(y_AB, y_AC);
+      res.emplace_back(x, o.first, o.second);
     }
   }
   // Process segment from x2 to x3
-  if (x3 == x2) {
-    if (y3 < y2) {
-      y_min = std::ceil(y3);
-      y_max = std::ceil(y2);
-    } else {
-      y_min = std::ceil(y2);
-      y_max = std::ceil(y3);
-    }
-    res.emplace_back(x2i, y_min, y_max);
-  } else {
+  if (x3 > x2) {
     for (int x = x2i; x < x3i; ++x) {
       // find intersection of line x=x with lines BC
       double y_BC = (x - x2) * coeff_32 + y2;
       // find intersection of line x=x with lines AC
       double y_AC = (x - x1) * coeff_31 + y1;
-      if (y_BC < y_AC) {
-        y_min = std::ceil(y_BC);
-        y_max = std::ceil(y_AC);
-      } else {
-        y_min = std::ceil(y_AC);
-        y_max = std::ceil(y_BC);
-      }
+      auto o = inclusive_exclusive_bound(y_BC, y_AC);
+      res.emplace_back(x, o.first, o.second);
       res.emplace_back(x, y_min, y_max);
     }
   }
@@ -148,8 +141,11 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImageSimple(
           continue;
         }
         double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
+        if (c1 < 0 || c1 > 1) continue;
         double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
+        if (c2 < 0 || c2 > 1) continue;
         double c3 = 1 - c1 - c2;
+        if (c3 < 0 || c3 > 1) continue;
         Vector3d rgb_at_yx = c1 * rgb1 + c2 * rgb2 + c3 * rgb3;
         dst_r(y, x) = rgb_at_yx(0);
         dst_g(y, x) = rgb_at_yx(1);
@@ -252,6 +248,7 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd, MatrixXi> CreateTextureImage(
       if (x < 0 || y < 0 || x >= width || y >= height) {
         continue;
       }
+      // Calculate barycenter coordinate.
       double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
       double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
       double c3 = 1 - c1 - c2;

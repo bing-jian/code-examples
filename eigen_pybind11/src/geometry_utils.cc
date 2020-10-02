@@ -38,7 +38,7 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
                                  triangle.row(2));
 }
 
-// pts = np.array([[1,1], [2.3, 4 ], [2.3, 4.5]])
+// TODO: add some unit tests especially for edge cases.
 std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
     const Vector2d& p1, const Vector2d& p2, const Vector2d& p3) {
   // Sort by x coordinates
@@ -140,6 +140,7 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd> CreateTextureImageSimple(
         if (y < 0 || y >= height) {
           continue;
         }
+        // Calculate barycenter coordinate.
         double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
         if (c1 < 0 || c1 > 1) continue;
         double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
@@ -250,8 +251,11 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd, MatrixXi> CreateTextureImage(
       }
       // Calculate barycenter coordinate.
       double c1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
+      if (c1 < 0 || c1 > 1) continue;
       double c2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
+      if (c2 < 0 || c2 > 1) continue;
       double c3 = 1 - c1 - c2;
+      if (c3 < 0 || c3 > 1) continue;
       Vector3d rgb_at_yx = c1 * rgb1 + c2 * rgb2 + c3 * rgb3;
       dst_r(y, x) = rgb_at_yx(0);
       dst_g(y, x) = rgb_at_yx(1);

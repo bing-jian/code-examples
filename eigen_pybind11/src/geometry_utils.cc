@@ -67,7 +67,6 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
   double coeff_31 = (y3 - y1) / (x3 - x1);
   double coeff_32 = (y3 - y2) / (x3 - x2);
 
-  int y_min, y_max = 0;
   if (x2 == x1) {
     auto o = inclusive_exclusive_bound(y1, y2);
     res.emplace_back(x1i, o.first, o.second);
@@ -90,7 +89,6 @@ std::vector<std::tuple<int, int, int>> LatticePointsInTriangle(
       double y_AC = (x - x1) * coeff_31 + y1;
       auto o = inclusive_exclusive_bound(y_BC, y_AC);
       res.emplace_back(x, o.first, o.second);
-      res.emplace_back(x, y_min, y_max);
     }
   }
   return res;
@@ -241,8 +239,6 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd, MatrixXi> CreateTextureImage(
     double y3 = p3(1);
     double det = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
     const auto& lattices = x.second;
-    int max_x = width - 1;
-    int max_y = height - 1;
     for (const auto& xy : lattices) {
       int x = xy.first;
       int y = xy.second;

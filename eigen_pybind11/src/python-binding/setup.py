@@ -7,11 +7,14 @@ cpp_args = ['-std=c++11', '-stdlib=libc++', '-mmacosx-version-min=10.7']
 
 ext_modules = [
     Extension(
-    'wrapper',
-        ['../funcs.cc', '../math_utils.cc', 'pybind11_interface.cc'],
+        'wrapper',
+        [
+            '../funcs.cc', '../math_utils.cc', '../geometry_utils.cc',
+            '../distance_transform_utils.cc', 'pybind11_interface.cc'
+        ],
         include_dirs=['pybind11/include'],
-    language='c++',
-    extra_compile_args = cpp_args,
+        language='c++',
+        extra_compile_args=cpp_args,
     ),
 ]
 

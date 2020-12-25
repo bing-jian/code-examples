@@ -239,8 +239,6 @@ std::tuple<MatrixXd, MatrixXd, MatrixXd, MatrixXi> CreateTextureImage(
     double y3 = p3(1);
     double det = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
     const auto& lattices = x.second;
-    int max_x = width - 1;
-    int max_y = height - 1;
     for (const auto& xy : lattices) {
       int x = xy.first;
       int y = xy.second;

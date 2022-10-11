@@ -1,0 +1,44 @@
+// protoc --python_out=. graph.proto
+
+syntax = "proto3";
+
+package bing;
+
+message EulerAngle {
+  float yaw = 1;
+  float pitch = 2;
+  float roll = 3;
+}
+
+message Translation {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message Pose {
+  EulerAngle angles = 1;
+  Translation translation = 2;
+}
+
+message PanoNode {
+  string id = 1;
+  // data, img_path
+  Pose pose = 2;
+  repeated string visible_nodes = 3; 
+}
+
+message PanoEdge {
+  string id = 1;
+  string src = 2;
+  string dst = 3;
+  float weight = 4;
+  Pose pose = 5;
+}
+
+message PanoGraph {
+  repeated PanoNode nodes = 1;
+  repeated PanoEdge edges = 2;
+  float camera_height = 3;
+  bool has_gt_pose = 4;
+}
